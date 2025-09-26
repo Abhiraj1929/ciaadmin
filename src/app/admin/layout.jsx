@@ -12,6 +12,7 @@ function AdminSidebar() {
     { name: 'Dashboard', href: '/admin', icon: '📊' },
     { name: 'Cia-Enquires', href: '/admin/Enquires', icon: '📩' },
     { name: 'Members', href: '/admin/members', icon: '👥' },
+    { name: 'Register Team', href: '/admin/register-team', icon: '🏆' },
     { name: 'Settings', href: '/admin/settings', icon: '⚙️' }
   ]
 
@@ -159,52 +160,47 @@ export default function AdminLayout({ children }) {
   }, [shouldRedirect, pathname, router, mounted])
 
   const checkAdminAuth = async () => {
-    try {
-      // Get current session first
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-      
-      if (sessionError || !session) {
-        console.log('No session found')
-        setLoading(false)
-        setShouldRedirect(true)
-        return
-      }
-
-      const user = session.user
-
-      if (!user) {
-        console.log('No user in session')
-        setLoading(false)
-        setShouldRedirect(true)
-        return
-      }
-
-      // Check if user is admin
-      const { data: adminData, error: adminError } = await supabase
-        .from('admins')
-        .select('*')
-        .eq('email', user.email)
-
-      // If any error or no admin data
-      if (adminError || !adminData || adminData.length === 0) {
-        console.log('Admin verification failed')
-        await supabase.auth.signOut()
-        setLoading(false)
-        setShouldRedirect(true)
-        return
-      }
-
-      // Success
-      setUser(user)
-      setIsAdmin(true)
+  try {
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+    
+    if (sessionError || !session) {
       setLoading(false)
-
-    } catch (error) {
-      console.error('Auth check failed:', error)
-      setLoading(false)
-      setShouldRedirect(true)
+      if (pathname !== '/admin/login') {
+        router.push('/admin/login')
+      }
+      return
     }
+
+    const user = session.user
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', user.email)
+
+    if (adminError || !adminData || adminData.length === 0) {
+      await supabase.auth.signOut()
+      setLoading(false)
+      router.push('/admin/login')
+      return
+    }
+
+    // Success - user is authenticated admin
+    setUser(user)
+    setIsAdmin(true)
+    setLoading(false)
+    
+    // Redirect to admin dashboard if on login page
+    if (pathname === '/admin/login') {
+      router.push('/admin')
+    }
+
+  } catch (error) {
+    console.error('Auth check failed:', error)
+    setLoading(false)
+    router.push('/admin/login')
   }
+}
+
 
   const handleLogout = async () => {
     try {
