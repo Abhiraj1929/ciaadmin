@@ -7,22 +7,16 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 );
 
-// GET method for fetching members
 export async function GET(request) {
   try {
-    console.log("GET /api/members called");
-
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = Math.min(parseInt(searchParams.get("limit") || "20"), 100);
     const status = searchParams.get("status") || "all";
     const search = searchParams.get("search") || "";
 
-    console.log("Query params:", { page, limit, status, search });
-
     const offset = (page - 1) * limit;
 
-    // Build query
     let query = supabase
       .from("members")
       .select("*", { count: "exact" })
@@ -41,12 +35,9 @@ export async function GET(request) {
     if (search.trim()) {
       query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
     }
-
-    console.log("Executing query...");
     const { data, error, count } = await query;
 
     if (error) {
-      console.error("Database error:", error);
       return NextResponse.json(
         {
           success: false,
@@ -56,9 +47,6 @@ export async function GET(request) {
         { status: 500 }
       );
     }
-
-    console.log(`Query successful: ${data?.length || 0} members found`);
-
     return NextResponse.json(
       {
         success: true,
@@ -72,7 +60,6 @@ export async function GET(request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("API error:", error);
     return NextResponse.json(
       {
         success: false,
@@ -87,8 +74,6 @@ export async function GET(request) {
 // DELETE method for deleting members
 export async function DELETE(request) {
   try {
-    console.log("DELETE /api/members called");
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -102,8 +87,6 @@ export async function DELETE(request) {
       );
     }
 
-    console.log("Deleting member with ID:", id);
-
     // Delete the member
     const { error: memberError } = await supabase
       .from("members")
@@ -111,7 +94,6 @@ export async function DELETE(request) {
       .eq("id", id);
 
     if (memberError) {
-      console.error("Error deleting member:", memberError);
       return NextResponse.json(
         {
           success: false,
@@ -120,9 +102,6 @@ export async function DELETE(request) {
         { status: 500 }
       );
     }
-
-    console.log("Member deleted successfully");
-
     return NextResponse.json(
       {
         success: true,
@@ -131,7 +110,7 @@ export async function DELETE(request) {
       { status: 200 }
     );
   } catch (error) {
-    console.error("DELETE API error:", error);
+
     return NextResponse.json(
       {
         success: false,
