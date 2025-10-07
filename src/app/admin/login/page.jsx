@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -9,8 +9,34 @@ export default function AdminLogin() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [session, setSession] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const supabase = createClientComponentClient()
   const router = useRouter()
+
+  // Listen for session updates
+  useEffect(() => {
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession()
+      setSession(data?.session)
+    }
+    getSession()
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session)
+    })
+
+    return () => {
+      listener.subscription?.unsubscribe()
+    }
+  }, [supabase])
+
+  // On session and isAdmin update, redirect
+  useEffect(() => {
+    if (session && isAdmin) {
+      router.push('/admin')
+    }
+  }, [session, isAdmin, router])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -18,24 +44,19 @@ export default function AdminLogin() {
     setError('')
 
     try {
-      console.log('Attempting admin login for:', email)
-
-      // First authenticate with Supabase
+      // Authenticate using Supabase
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       })
 
       if (authError) {
-        console.error('Auth error:', authError)
         setError(authError.message)
         setLoading(false)
         return
       }
 
-      console.log('Authentication successful, checking admin privileges...')
-
-      // Check if user is admin
+      // Check admin privileges after successful login
       const { data: adminData, error: adminError } = await supabase
         .from('admins')
         .select('*')
@@ -43,20 +64,17 @@ export default function AdminLogin() {
         .single()
 
       if (adminError || !adminData) {
-        console.error('Admin check failed:', adminError)
         await supabase.auth.signOut()
         setError('Access denied. Admin privileges required.')
         setLoading(false)
         return
       }
 
-      console.log('Admin privileges confirmed, redirecting...')
-      
-      // Successful admin login - redirect to admin dashboard
-      router.push('/admin')
-      
-    } catch (error) {
-      console.error('Login failed:', error)
+      setIsAdmin(true)
+      setLoading(false)
+      // Session and isAdmin triggers the redirect in useEffect
+
+    } catch (err) {
       setError('Login failed. Please try again.')
       setLoading(false)
     }
@@ -76,7 +94,6 @@ export default function AdminLogin() {
             Sign in to access the admin panel
           </p>
         </div>
-
         <form className="mt-8 space-y-6" onSubmit={handleLogin}>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
@@ -86,7 +103,6 @@ export default function AdminLogin() {
               </div>
             </div>
           )}
-
           <div className="rounded-md shadow-sm space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
@@ -104,7 +120,6 @@ export default function AdminLogin() {
                 placeholder="Enter admin email address"
               />
             </div>
-            
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Password
@@ -122,7 +137,6 @@ export default function AdminLogin() {
               />
             </div>
           </div>
-
           <div>
             <button
               type="submit"
@@ -142,7 +156,6 @@ export default function AdminLogin() {
               )}
             </button>
           </div>
-
           <div className="text-center space-y-2">
             <Link 
               href="/member/login" 
