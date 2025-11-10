@@ -156,14 +156,6 @@ export default function AdminLogin() {
               )}
             </button>
           </div>
-          <div className="text-center space-y-2">
-            <Link 
-              href="/member/login" 
-              className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
-            >
-              Member Login →
-            </Link>
-          </div>
         </form>
       </div>
     </div>
