@@ -24,6 +24,7 @@ function AdminSidebar({ isOpen, onClose }) {
   const menuItems = useMemo(() => [
     { name: 'Dashboard', href: '/admin', icon: '📊' },
     { name: 'Cia-Enquires', href: '/admin/Enquires', icon: '📩' },
+    {name: 'Performance', href: '/admin/cd2-registrationfrom', icon: '📩'},
     { name: 'Register Team', href: '/admin/register-team', icon: '🏆' },
     { name: 'Leaderboard', href: '/admin/leaderboard', icon: '🏅' },
   ], [])
